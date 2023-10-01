@@ -2,8 +2,8 @@ import sys
 import cv2
 import numpy as np
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QFileDialog, QSlider, QLabel, QSizePolicy, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem
-from PyQt6.QtGui import QPixmap, QImage
-from PyQt6.QtCore import QUrl, Qt, QTimer
+from PyQt6.QtGui import QPixmap, QImage, QPainter, QColor, QBrush, QLinearGradient
+from PyQt6.QtCore import QUrl, Qt, QTimer, QPropertyAnimation, pyqtProperty
 
 
 class VideoPlayer(QWidget):
@@ -26,15 +26,32 @@ class VideoPlayer(QWidget):
 
         self.layout.addLayout(self.playersLayout)
 
+        self.functionsLayout = QHBoxLayout()
+
         # 閉じるボタンの設定
-        self.closeButton = QPushButton("閉じる", self)
+        self.closeButton = QPushButton(" 閉じる ", self)
+        self.closeButton.setFixedSize(
+            self.closeButton.sizeHint())  # ボタンの横幅を文字がちょうど収まる程度に設定
         self.closeButton.clicked.connect(self.close)
-        self.layout.addWidget(self.closeButton)
+        self.functionsLayout.addWidget(self.closeButton)
+
+        # 動画生成ボタンの設定
+        self.generateButton = QPushButton(" ボーン合成動画の生成 ", self)
+        self.generateButton.clicked.connect(self.generateVideo)
+        self.generateButton.setFixedSize(
+            self.generateButton.sizeHint())  # ボタンの横幅を文字がちょうど収まる程度に設定
+        self.functionsLayout.addWidget(self.generateButton)
+
+        self.layout.addLayout(self.functionsLayout)
 
         # ウィンドウの設定
         self.setLayout(self.layout)
         self.setWindowTitle("動画プレイヤー")
         self.resize(1600, 600)
+
+    def generateVideo(self):
+        # 空のメソッド
+        pass
 
 
 class SingleVideoPlayer(QWidget):
@@ -44,15 +61,21 @@ class SingleVideoPlayer(QWidget):
         # レイアウトの設定
         self.layout = QVBoxLayout(self)
 
+        self.topLayout = QHBoxLayout()
+
+        # ボタンの設定
+        self.openButton = QPushButton(" 動画選択 ", self)
+        self.openButton.clicked.connect(self.openFile)
+        self.openButton.setFixedSize(
+            self.openButton.sizeHint())  # ボタンの横幅を文字がちょうど収まる程度に設定
+        self.topLayout.addWidget(self.openButton)
+
         # 動画情報のラベル
         self.infoLabel = QLabel(self)
         self.infoLabel.setAlignment(Qt.AlignmentFlag.AlignRight)
-        self.layout.addWidget(self.infoLabel)
+        self.topLayout.addWidget(self.infoLabel)
 
-        # ボタンの設定
-        self.openButton = QPushButton("動画選択", self)
-        self.openButton.clicked.connect(self.openFile)
-        self.layout.addWidget(self.openButton)
+        self.layout.addLayout(self.topLayout)
 
         # ビデオ表示の設定
         self.graphicsView = QGraphicsView(self)
@@ -136,7 +159,6 @@ class SingleVideoPlayer(QWidget):
         self.timer.stop()
 
     def setPosition(self, position):
-        print(position)
         if self.cap:
             self.cap.set(cv2.CAP_PROP_POS_FRAMES, position)
             ret, frame = self.cap.read()

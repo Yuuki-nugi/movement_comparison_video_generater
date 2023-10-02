@@ -5,6 +5,9 @@ from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPu
 from PyQt6.QtGui import QPixmap, QImage, QPainter, QColor, QBrush, QLinearGradient
 from PyQt6.QtCore import QUrl, Qt, QTimer, QPropertyAnimation, pyqtProperty
 
+import pose_detection
+import generate_video_with_bone
+
 
 class VideoPlayer(QWidget):
     def __init__(self):
@@ -120,8 +123,12 @@ class SingleVideoPlayer(QWidget):
     def openFile(self):
         fileName, _ = QFileDialog.getOpenFileName(
             self, "Open Movie", "", "All Files (*);;Movie Files (*.mp4 *.avi)")
-        if fileName:
-            self.cap = cv2.VideoCapture(fileName)
+        
+        csv_path = pose_detection.pose_detection(fileName)
+        generated_video_path = generate_video_with_bone.generate_download_video(fileName,csv_path, "", 60, 0, 0, "red", "blue")
+        
+        if generated_video_path:
+            self.cap = cv2.VideoCapture(generated_video_path)
             self.fps = int(self.cap.get(cv2.CAP_PROP_FPS))
             self.totalFrames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
             self.slider.setRange(0, self.totalFrames)

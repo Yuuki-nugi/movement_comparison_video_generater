@@ -49,7 +49,7 @@ class VideoPlayer(QWidget):
 
         # ウィンドウの設定
         self.setLayout(self.layout)
-        self.setWindowTitle("動画プレイヤー")
+        self.setWindowTitle("Movement Comparison Video Generator")
         self.resize(1600, 600)
 
     def generateVideo(self):

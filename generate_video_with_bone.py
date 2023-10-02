@@ -19,8 +19,13 @@ def generate_download_video(video_path, csv_path, target_csv_path, target_fps, o
 
     # dt_now = datetime.datetime.now(pytz.timezone('Asia/Tokyo'))
     # formatted_dt = dt_now.strftime('%Y-%m-%d-%H-%M-%S')
+    output_video_file_name = ""
     
-    output_video_file_name = f"exported/{video_path.split('/')[-1].split('.')[0]}_output.mp4"
+    if target_csv_path == "":
+        output_video_file_name = f"exported/{video_path.split('/')[-1].split('.')[0]}_output.mp4"
+    else:
+        output_video_file_name = f"exported/{video_path.split('/')[-1].split('.')[0]}_with_{target_csv_path.split('/')[-1].split('.')[0]}_output.mp4"
+            
     
     with open(csv_path, encoding='utf8', newline='') as f:
         csv_reader_base = list(csv.reader(f, delimiter=' ', quotechar='|'))
@@ -59,8 +64,9 @@ def generate_download_video(video_path, csv_path, target_csv_path, target_fps, o
                 image, keypoints, colors[base_color])
 
             if target_csv_path != "":
-                if 0 <= math.floor(target_index_value) and len(csv_reader_target) > math.floor(target_index_value):
-                    target_index = math.floor(target_index_value)
+                # 列名分で+1
+                target_index = math.floor(target_index_value)+1
+                if 0 <= target_index and len(csv_reader_target) > target_index:
                     csv_row = csv_reader_target[target_index][0].split(',')
 
                     compare_keypoints = []

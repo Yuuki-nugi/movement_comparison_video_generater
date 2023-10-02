@@ -46,7 +46,7 @@ def generate_download_video(video_path, csv_path, target_csv_path, target_fps, o
         ret, frame = cap.read()
         if ret:
             image = copy.deepcopy(frame)
-            csv_row = csv_reader_base[index][0].split(',')
+            csv_row = csv_reader_base[index+1][0].split(',')
 
             keypoints = []
 

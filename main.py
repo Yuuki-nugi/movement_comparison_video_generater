@@ -5,6 +5,9 @@ from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPu
 from PyQt6.QtGui import QPixmap, QImage, QPainter, QColor, QBrush, QLinearGradient
 from PyQt6.QtCore import QUrl, Qt, QTimer, QPropertyAnimation, pyqtProperty
 
+import pose_detection
+import generate_video_with_bone
+
 
 class VideoPlayer(QWidget):
     def __init__(self):
@@ -50,8 +53,17 @@ class VideoPlayer(QWidget):
         self.resize(1600, 600)
 
     def generateVideo(self):
-        # 空のメソッド
-        pass
+        video_file_path = self.player1.get_video_file_path()
+        video_file_path2 = self.player2.get_video_file_path()
+        
+        csv_path = f"exported/{video_file_path.split('/')[-1].split('.')[-2]}.csv"
+        csv_path2 = f"exported/{video_file_path2.split('/')[-1].split('.')[-2]}.csv"
+        
+        target_fps = self.player2.get_video_fps()
+        overlap_frame_base = self.player1.get_current_frame()
+        overlap_frame_target = self.player2.get_current_frame()
+
+        generate_video_with_bone.generate_download_video(video_file_path,csv_path, csv_path2, target_fps, overlap_frame_base, overlap_frame_target, "red", "blue")
 
 
 class SingleVideoPlayer(QWidget):
@@ -116,12 +128,17 @@ class SingleVideoPlayer(QWidget):
         self.cap = None
         self.currentFrame = None
         self.fps = 0
+        self.video_file_path = ""
 
     def openFile(self):
-        fileName, _ = QFileDialog.getOpenFileName(
+        self.video_file_path, _ = QFileDialog.getOpenFileName(
             self, "Open Movie", "", "All Files (*);;Movie Files (*.mp4 *.avi)")
-        if fileName:
-            self.cap = cv2.VideoCapture(fileName)
+        
+        csv_path = pose_detection.pose_detection(self.video_file_path)
+        generated_video_path = generate_video_with_bone.generate_download_video(self.video_file_path, csv_path, "", 60, 0, 0, "red", "blue")
+        
+        if generated_video_path:
+            self.cap = cv2.VideoCapture(generated_video_path)
             self.fps = int(self.cap.get(cv2.CAP_PROP_FPS))
             self.totalFrames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
             self.slider.setRange(0, self.totalFrames)
@@ -182,6 +199,16 @@ class SingleVideoPlayer(QWidget):
         currentFrameNum = int(self.cap.get(cv2.CAP_PROP_POS_FRAMES))
         self.infoLabel.setText(
             f"FPS: {self.fps} | Total Frames: {self.totalFrames} | Current Frame: {currentFrameNum}")
+        
+    def get_video_file_path(self):
+        return self.video_file_path
+    
+    def get_current_frame(self):
+        currentFrameNum = int(self.cap.get(cv2.CAP_PROP_POS_FRAMES))
+        return currentFrameNum
+    
+    def get_video_fps(self):
+        return self.fps
 
 
 if __name__ == '__main__':

@@ -35,7 +35,7 @@ class VideoPlayer(QWidget):
         self.functionsLayout = QHBoxLayout() 
 
         # 閉じるボタンの設定
-        self.closeButton = QPushButton(" 閉じる ", self)
+        self.closeButton = QPushButton(" Close ", self)
         self.closeButton.setFixedSize(
             self.closeButton.sizeHint())  # ボタンの横幅を文字がちょうど収まる程度に設定
         self.closeButton.clicked.connect(self.close)
@@ -44,7 +44,7 @@ class VideoPlayer(QWidget):
         self.functionsLayout.addStretch(1)
         
         # 文字列を表示
-        self.output_video_file_name_label = QLabel("出力ファイル名", self)
+        self.output_video_file_name_label = QLabel("Output File Name", self)
         self.functionsLayout.addWidget(self.output_video_file_name_label)
         
         # 文字列を入力できる入力欄の設定
@@ -54,7 +54,7 @@ class VideoPlayer(QWidget):
         self.functionsLayout.addWidget(self.output_video_file_name_input)
 
         # 動画生成ボタンの設定
-        self.generateButton = QPushButton(" ボーン合成動画の生成 ", self)
+        self.generateButton = QPushButton(" Generate Video ", self)
         self.generateButton.clicked.connect(self.generateVideo)
         self.generateButton.setFixedSize(
             self.generateButton.sizeHint())  # ボタンの横幅を文字がちょうど収まる程度に設定
@@ -104,7 +104,7 @@ class SingleVideoPlayer(QWidget):
         self.topLayout = QHBoxLayout()
 
         # ボタンの設定
-        self.openButton = QPushButton(" 動画選択 ", self)
+        self.openButton = QPushButton(" Select Video ", self)
         self.openButton.clicked.connect(self.openFile)
         self.openButton.setFixedSize(
             self.openButton.sizeHint())  # ボタンの横幅を文字がちょうど収まる程度に設定
@@ -157,7 +157,7 @@ class SingleVideoPlayer(QWidget):
         self.bone_color_layout.addStretch(1)
         
         # 文字列を表示
-        self.output_video_file_name_label = QLabel("ボーンカラー", self)
+        self.output_video_file_name_label = QLabel("Bone Color", self)
         self.bone_color_layout.addWidget(self.output_video_file_name_label)
 
         # 色を選択できるプルダウンの設定

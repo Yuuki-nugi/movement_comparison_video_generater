@@ -9,6 +9,7 @@ from PyQt6.QtWidgets import QProgressDialog, QErrorMessage
 
 import pose_detection
 import generate_video_with_bone
+import generated_video_player
 
 
 class VideoPlayer(QWidget):
@@ -111,10 +112,13 @@ class VideoPlayer(QWidget):
         overlap_body_part_base = self.player1.overlap_body_part_combo_box.currentText()
         overlap_body_part_target = self.player2.overlap_body_part_combo_box.currentText()
 
-        generate_video_with_bone.generate_download_video(video_file_path,csv_path, csv_path2, target_fps, overlap_frame_base, overlap_frame_target, overlap_body_part_base, overlap_body_part_target, color1, color2, output_video_file_name)
+        video_file_path = generate_video_with_bone.generate_download_video(video_file_path,csv_path, csv_path2, target_fps, overlap_frame_base, overlap_frame_target, overlap_body_part_base, overlap_body_part_target, color1, color2, output_video_file_name)
 
         # プログレスダイアログを閉じる
         self.progressDialog.close()
+        
+        self.generated_video_view = generated_video_player.GeneratedVideoPlayer(video_file_path)
+        self.generated_video_view.show()
 
 class SingleVideoPlayer(QWidget):
     def __init__(self, parent=None, isBase=False):

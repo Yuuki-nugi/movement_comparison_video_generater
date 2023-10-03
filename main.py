@@ -107,8 +107,11 @@ class VideoPlayer(QWidget):
             self.errorDialog.show()
             self.progressDialog.close()
             return
+        
+        overlap_body_part_base = self.player1.overlap_body_part_combo_box.currentText()
+        overlap_body_part_target = self.player2.overlap_body_part_combo_box.currentText()
 
-        generate_video_with_bone.generate_download_video(video_file_path,csv_path, csv_path2, target_fps, overlap_frame_base, overlap_frame_target, color1, color2, output_video_file_name)
+        generate_video_with_bone.generate_download_video(video_file_path,csv_path, csv_path2, target_fps, overlap_frame_base, overlap_frame_target, overlap_body_part_base, overlap_body_part_target, color1, color2, output_video_file_name)
 
         # プログレスダイアログを閉じる
         self.progressDialog.close()
@@ -186,6 +189,16 @@ class SingleVideoPlayer(QWidget):
         self.setting_layout.addWidget(self.overlap_frame_input)
         
         # 文字列を表示
+        self.overlap_body_part_label = QLabel("Overlap Body Part", self)
+        self.setting_layout.addWidget(self.overlap_body_part_label)
+        
+        # 重ねる部位を選択できるプルダウンの設定
+        self.overlap_body_part_combo_box = QComboBox(self)
+        self.overlap_body_part_combo_box.addItems(generate_video_with_bone.body_parts_mapping.keys())
+        self.overlap_body_part_combo_box.setFixedWidth(120)
+        self.setting_layout.addWidget(self.overlap_body_part_combo_box)
+        
+        # 文字列を表示
         self.output_video_file_name_label = QLabel("Bone Color", self)
         self.setting_layout.addWidget(self.output_video_file_name_label)
 
@@ -220,7 +233,7 @@ class SingleVideoPlayer(QWidget):
         QApplication.processEvents()  # UIを更新
         
         csv_path = pose_detection.pose_detection(self.video_file_path)
-        generated_video_path = generate_video_with_bone.generate_download_video(self.video_file_path, csv_path, "", 60, 0, 0, self.colorComboBox.currentText(), "blue", "")
+        generated_video_path = generate_video_with_bone.generate_download_video(self.video_file_path, csv_path, "", 60, 0, 0, "waistCenter", "waistCenter", self.colorComboBox.currentText(), "blue", "")
         
         if generated_video_path:
             self.cap = cv2.VideoCapture(generated_video_path)

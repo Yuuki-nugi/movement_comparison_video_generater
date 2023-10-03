@@ -15,16 +15,18 @@ colors = {
     "black": (0, 0, 0)
 }
 
-def generate_download_video(video_path, csv_path, target_csv_path, target_fps, overlap_frame_base, overlap_frame_target, base_color, target_color) -> str:
+def generate_download_video(video_path, csv_path, target_csv_path, target_fps, overlap_frame_base, overlap_frame_target, base_color, target_color, output_video_file_name) -> str:
 
     # dt_now = datetime.datetime.now(pytz.timezone('Asia/Tokyo'))
     # formatted_dt = dt_now.strftime('%Y-%m-%d-%H-%M-%S')
-    output_video_file_name = ""
     
-    if target_csv_path == "":
-        output_video_file_name = f"exported/{video_path.split('/')[-1].split('.')[0]}_output.mp4"
+    if output_video_file_name == "":
+        if target_csv_path == "":
+            output_video_file_name = f"exported/{video_path.split('/')[-1].split('.')[0]}_output.mp4"
+        else:
+            output_video_file_name = f"exported/{video_path.split('/')[-1].split('.')[0]}_with_{target_csv_path.split('/')[-1].split('.')[0]}_output.mp4"
     else:
-        output_video_file_name = f"exported/{video_path.split('/')[-1].split('.')[0]}_with_{target_csv_path.split('/')[-1].split('.')[0]}_output.mp4"
+        output_video_file_name = f"exported/{output_video_file_name}.mp4"
             
     
     with open(csv_path, encoding='utf8', newline='') as f:
@@ -66,7 +68,7 @@ def generate_download_video(video_path, csv_path, target_csv_path, target_fps, o
             if target_csv_path != "":
                 # 列名分で+1
                 target_index = math.floor(target_index_value)+1
-                if 0 <= target_index and len(csv_reader_target) > target_index:
+                if 1 <= target_index and len(csv_reader_target) > target_index:
                     csv_row = csv_reader_target[target_index][0].split(',')
 
                     compare_keypoints = []

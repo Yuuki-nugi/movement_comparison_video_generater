@@ -1,9 +1,10 @@
 import sys
 import cv2
 import numpy as np
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QFileDialog, QSlider, QLabel, QSizePolicy, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem
-from PyQt6.QtGui import QPixmap, QImage, QPainter, QColor, QBrush, QLinearGradient
-from PyQt6.QtCore import QUrl, Qt, QTimer, QPropertyAnimation, pyqtProperty
+from PyQt6.QtWidgets import QApplication, QWidget,QVBoxLayout, QHBoxLayout, QPushButton, QFileDialog, QSlider, QLabel, QSizePolicy, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QLineEdit, QComboBox
+from PyQt6.QtGui import QPixmap, QImage
+from PyQt6.QtCore import Qt, QTimer
+
 
 import pose_detection
 import generate_video_with_bone
@@ -28,8 +29,9 @@ class VideoPlayer(QWidget):
         self.playersLayout.addWidget(self.player2)
 
         self.layout.addLayout(self.playersLayout)
-
-        self.functionsLayout = QHBoxLayout()
+        
+        
+        self.functionsLayout = QHBoxLayout() 
 
         # 閉じるボタンの設定
         self.closeButton = QPushButton(" 閉じる ", self)
@@ -37,6 +39,19 @@ class VideoPlayer(QWidget):
             self.closeButton.sizeHint())  # ボタンの横幅を文字がちょうど収まる程度に設定
         self.closeButton.clicked.connect(self.close)
         self.functionsLayout.addWidget(self.closeButton)
+        
+        self.functionsLayout.addStretch(1)
+        
+        # 文字列を表示
+        self.output_video_file_name_label = QLabel("出力ファイル名", self)
+        self.functionsLayout.addWidget(self.output_video_file_name_label)
+        
+        # 文字列を入力できる入力欄の設定
+        self.output_video_file_name_input = QLineEdit(self)
+        self.output_video_file_name_input.setFixedWidth(320)
+        self.output_video_file_name_input.setAlignment(Qt.AlignmentFlag.AlignRight)
+        self.output_video_file_name_input.setStyleSheet("QLineEdit { border-radius: 5px; }")
+        self.functionsLayout.addWidget(self.output_video_file_name_input)
 
         # 動画生成ボタンの設定
         self.generateButton = QPushButton(" ボーン合成動画の生成 ", self)
@@ -62,8 +77,16 @@ class VideoPlayer(QWidget):
         target_fps = self.player2.get_video_fps()
         overlap_frame_base = self.player1.get_current_frame()
         overlap_frame_target = self.player2.get_current_frame()
+        
+        output_video_file_name = self.output_video_file_name_input.text()
+        color1 = self.player1.getSelectedColor()
+        color2 = self.player2.getSelectedColor()
+        
+        print(f"Input Text: {output_video_file_name}")
+        print(f"Player 1 Color: {color1}")
+        print(f"Player 2 Color: {color2}")
 
-        generate_video_with_bone.generate_download_video(video_file_path,csv_path, csv_path2, target_fps, overlap_frame_base, overlap_frame_target, "red", "blue")
+        generate_video_with_bone.generate_download_video(video_file_path,csv_path, csv_path2, target_fps, overlap_frame_base, overlap_frame_target, color1, color2, output_video_file_name)
 
 
 class SingleVideoPlayer(QWidget):
@@ -123,6 +146,22 @@ class SingleVideoPlayer(QWidget):
         self.slider = QSlider(Qt.Orientation.Horizontal)
         self.slider.sliderMoved.connect(self.setPosition)
         self.layout.addWidget(self.slider)
+        
+        self.bone_color_layout = QHBoxLayout()
+        
+        self.bone_color_layout.addStretch(1)
+        
+        # 文字列を表示
+        self.output_video_file_name_label = QLabel("ボーンカラー", self)
+        self.bone_color_layout.addWidget(self.output_video_file_name_label)
+
+        # 色を選択できるプルダウンの設定
+        self.colorComboBox = QComboBox(self)
+        self.colorComboBox.addItems(["red", "blue", "green", "yellow", "white", "black"])
+        self.colorComboBox.setFixedWidth(100)
+        self.bone_color_layout.addWidget(self.colorComboBox)
+        
+        self.layout.addLayout(self.bone_color_layout)
 
         # メンバ変数の初期化
         self.cap = None
@@ -135,7 +174,7 @@ class SingleVideoPlayer(QWidget):
             self, "Open Movie", "", "All Files (*);;Movie Files (*.mp4 *.avi)")
         
         csv_path = pose_detection.pose_detection(self.video_file_path)
-        generated_video_path = generate_video_with_bone.generate_download_video(self.video_file_path, csv_path, "", 60, 0, 0, "red", "blue")
+        generated_video_path = generate_video_with_bone.generate_download_video(self.video_file_path, csv_path, "", 60, 0, 0, self.colorComboBox.currentText(), "blue", "")
         
         if generated_video_path:
             self.cap = cv2.VideoCapture(generated_video_path)
@@ -209,6 +248,9 @@ class SingleVideoPlayer(QWidget):
     
     def get_video_fps(self):
         return self.fps
+    
+    def getSelectedColor(self):
+        return self.colorComboBox.currentText()
 
 
 if __name__ == '__main__':

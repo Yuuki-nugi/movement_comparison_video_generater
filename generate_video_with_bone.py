@@ -96,6 +96,7 @@ def generate_download_video(video_path, csv_path, target_csv_path, target_fps, o
                             base_hip_center, compare_hip_center, compare_keypoint, ratio)
                         converted_compare_keypoints.append(
                             adjusted_keypoint)
+                        
                     drawed_image = draw_human_pose(
                         drawed_image, converted_compare_keypoints,  colors[target_color])
 
@@ -189,22 +190,28 @@ def get_height(keypoints):
         x2, y2 = point2
         distance = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
         return distance
+        
+    left_ear = (keypoints[7][0], keypoints[7][1])
+    left_shoulder = (keypoints[11][0], keypoints[11][1])
+    left_hip = (keypoints[23][0], keypoints[23][1])
+    left_knee = (keypoints[25][0], keypoints[25][1])
+    left_heel = (keypoints[29][0], keypoints[29][1])
+    
+    left_height = calculate_distance(left_ear, left_shoulder) + calculate_distance(left_shoulder, left_hip) + \
+        calculate_distance(left_hip, left_knee) + \
+        calculate_distance(left_knee, left_heel)
+        
+    right_ear = (keypoints[8][0], keypoints[8][1])
+    right_shoulder = (keypoints[12][0], keypoints[12][1])
+    right_hip = (keypoints[24][0], keypoints[24][1])
+    right_knee = (keypoints[26][0], keypoints[26][1])
+    right_heel = (keypoints[30][0], keypoints[30][1])
+    
+    right_height = calculate_distance(right_ear, right_shoulder) + calculate_distance(right_shoulder, right_hip) + \
+        calculate_distance(right_hip, right_knee) + \
+        calculate_distance(right_knee, right_heel)
 
-    ear_center = (
-        (keypoints[7][0] + keypoints[8][0])//2, (keypoints[7][1] + keypoints[8][1])//2)
-    shoulder_center = (
-        (keypoints[11][0] + keypoints[12][0])//2, (keypoints[11][1] + keypoints[12][1])//2)
-    hip_center = ((keypoints[23][0] + keypoints[24][0])//2,
-                  (keypoints[23][1] + keypoints[24][1])//2)
-    knee_center = ((keypoints[25][0] + keypoints[26][0])//2,
-                   (keypoints[25][1] + keypoints[26][1])//2)
-    heel_center = ((keypoints[29][0] + keypoints[30][0])//2,
-                   (keypoints[29][1] + keypoints[30][1])//2)
-
-    height = calculate_distance(ear_center, shoulder_center) + calculate_distance(shoulder_center, hip_center) + \
-        calculate_distance(hip_center, knee_center) + \
-        calculate_distance(knee_center, heel_center)
-    return height
+    return (left_height + right_height)/2
 
 
 def get_adjusted_for_base_point(base_overlap_point, target_overlap_point, target_point, ratio):

@@ -1,7 +1,7 @@
 import sys
 import cv2
 import numpy as np
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QFileDialog, QSlider, QLabel, QSizePolicy, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QLineEdit, QComboBox
+from PyQt6.QtWidgets import QApplication, QWidget,QVBoxLayout, QHBoxLayout, QPushButton, QFileDialog, QSlider, QLabel, QSizePolicy, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QLineEdit, QComboBox
 from PyQt6.QtGui import QPixmap, QImage
 from PyQt6.QtCore import Qt, QTimer
 
@@ -29,8 +29,9 @@ class VideoPlayer(QWidget):
         self.playersLayout.addWidget(self.player2)
 
         self.layout.addLayout(self.playersLayout)
-
-        self.functionsLayout = QHBoxLayout()
+        
+        
+        self.functionsLayout = QHBoxLayout() 
 
         # 閉じるボタンの設定
         self.closeButton = QPushButton(" 閉じる ", self)
@@ -39,8 +40,17 @@ class VideoPlayer(QWidget):
         self.closeButton.clicked.connect(self.close)
         self.functionsLayout.addWidget(self.closeButton)
         
+        self.functionsLayout.addStretch(1)
+        
+        # 文字列を表示
+        self.output_video_file_name_label = QLabel("出力ファイル名", self)
+        self.functionsLayout.addWidget(self.output_video_file_name_label)
+        
         # 文字列を入力できる入力欄の設定
         self.output_video_file_name_input = QLineEdit(self)
+        self.output_video_file_name_input.setFixedWidth(320)
+        self.output_video_file_name_input.setAlignment(Qt.AlignmentFlag.AlignRight)
+        self.output_video_file_name_input.setStyleSheet("QLineEdit { border-radius: 5px; }")
         self.functionsLayout.addWidget(self.output_video_file_name_input)
 
         # 動画生成ボタンの設定
@@ -136,11 +146,22 @@ class SingleVideoPlayer(QWidget):
         self.slider = QSlider(Qt.Orientation.Horizontal)
         self.slider.sliderMoved.connect(self.setPosition)
         self.layout.addWidget(self.slider)
+        
+        self.bone_color_layout = QHBoxLayout()
+        
+        self.bone_color_layout.addStretch(1)
+        
+        # 文字列を表示
+        self.output_video_file_name_label = QLabel("ボーンカラー", self)
+        self.bone_color_layout.addWidget(self.output_video_file_name_label)
 
         # 色を選択できるプルダウンの設定
         self.colorComboBox = QComboBox(self)
         self.colorComboBox.addItems(["red", "blue", "green", "yellow", "white", "black"])
-        self.layout.addWidget(self.colorComboBox)
+        self.colorComboBox.setFixedWidth(100)
+        self.bone_color_layout.addWidget(self.colorComboBox)
+        
+        self.layout.addLayout(self.bone_color_layout)
 
         # メンバ変数の初期化
         self.cap = None

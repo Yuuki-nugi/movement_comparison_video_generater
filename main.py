@@ -4,6 +4,7 @@ import numpy as np
 from PyQt6.QtWidgets import QApplication, QWidget,QVBoxLayout, QHBoxLayout, QPushButton, QFileDialog, QSlider, QLabel, QSizePolicy, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QLineEdit, QComboBox
 from PyQt6.QtGui import QPixmap, QImage
 from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtWidgets import QProgressDialog
 
 
 import pose_detection
@@ -49,7 +50,6 @@ class VideoPlayer(QWidget):
         # 文字列を入力できる入力欄の設定
         self.output_video_file_name_input = QLineEdit(self)
         self.output_video_file_name_input.setFixedWidth(320)
-        self.output_video_file_name_input.setAlignment(Qt.AlignmentFlag.AlignRight)
         self.output_video_file_name_input.setStyleSheet("QLineEdit { border-radius: 5px; }")
         self.functionsLayout.addWidget(self.output_video_file_name_input)
 
@@ -68,6 +68,13 @@ class VideoPlayer(QWidget):
         self.resize(1600, 600)
 
     def generateVideo(self):
+        # プログレスダイアログの設定
+        self.progressDialog = QProgressDialog("Processing...", None, 0, 0, self)
+        self.progressDialog.setWindowTitle("Please Wait")
+        self.progressDialog.setModal(True)  # 他のウィンドウの操作をブロック
+        self.progressDialog.show()
+        QApplication.processEvents()  # UIを更新
+        
         video_file_path = self.player1.get_video_file_path()
         video_file_path2 = self.player2.get_video_file_path()
         
@@ -81,13 +88,11 @@ class VideoPlayer(QWidget):
         output_video_file_name = self.output_video_file_name_input.text()
         color1 = self.player1.getSelectedColor()
         color2 = self.player2.getSelectedColor()
-        
-        print(f"Input Text: {output_video_file_name}")
-        print(f"Player 1 Color: {color1}")
-        print(f"Player 2 Color: {color2}")
 
         generate_video_with_bone.generate_download_video(video_file_path,csv_path, csv_path2, target_fps, overlap_frame_base, overlap_frame_target, color1, color2, output_video_file_name)
 
+        # プログレスダイアログを閉じる
+        self.progressDialog.close()
 
 class SingleVideoPlayer(QWidget):
     def __init__(self, parent=None):
@@ -173,6 +178,17 @@ class SingleVideoPlayer(QWidget):
         self.video_file_path, _ = QFileDialog.getOpenFileName(
             self, "Open Movie", "", "All Files (*);;Movie Files (*.mp4 *.avi)")
         
+        # getOpenFileNameでファイルが選択されなかった場合
+        if self.video_file_path == "":
+            return
+        
+        # プログレスダイアログの設定
+        self.progressDialog = QProgressDialog("Processing...", None, 0, 0, self)
+        self.progressDialog.setWindowTitle("Please Wait")
+        self.progressDialog.setModal(True)  # 他のウィンドウの操作をブロック
+        self.progressDialog.show()
+        QApplication.processEvents()  # UIを更新
+        
         csv_path = pose_detection.pose_detection(self.video_file_path)
         generated_video_path = generate_video_with_bone.generate_download_video(self.video_file_path, csv_path, "", 60, 0, 0, self.colorComboBox.currentText(), "blue", "")
         
@@ -182,6 +198,9 @@ class SingleVideoPlayer(QWidget):
             self.totalFrames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
             self.slider.setRange(0, self.totalFrames)
             self.timer.start(int(1000 / self.fps))
+            
+        # プログレスダイアログを閉じる
+        self.progressDialog.close()
 
     def updateFrame(self):
         ret, frame = self.cap.read()

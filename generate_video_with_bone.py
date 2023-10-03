@@ -15,7 +15,44 @@ colors = {
     "black": (0, 0, 0)
 }
 
-def generate_download_video(video_path, csv_path, target_csv_path, target_fps, overlap_frame_base, overlap_frame_target, base_color, target_color, output_video_file_name) -> str:
+body_parts_mapping = {
+    "waistCenter": (23, 24),  # 特別なケース
+    "nose": 0,
+    "leftEyeInner": 1,
+    "leftEye": 2,
+    "leftEyeOuter": 3,
+    "rightEyeInner": 4,
+    "rightEye": 5,
+    "rightEyeOuter": 6,
+    "leftEar": 7,
+    "rightEar": 8,
+    "leftMouth": 9,
+    "rightMouth": 10,
+    "leftShoulder": 11,
+    "rightShoulder": 12,
+    "leftElbow": 13,
+    "rightElbow": 14,
+    "leftWrist": 15,
+    "rightWrist": 16,
+    "leftPinky": 17,
+    "rightPinky": 18,
+    "leftIndex": 19,
+    "rightIndex": 20,
+    "leftThumb": 21,
+    "rightThumb": 22,
+    "leftHip": 25,
+    "rightHip": 26,
+    "leftKnee": 27,
+    "rightKnee": 28,
+    "leftAnkle": 29,
+    "rightAnkle": 30,
+    "leftHeel": 31,
+    "rightHeel": 32,
+    "leftFootIndex": 33,
+    "rightFootIndex": 34
+}
+
+def generate_download_video(video_path, csv_path, target_csv_path, target_fps, overlap_frame_base, overlap_frame_target, overlap_body_part_base, overlap_body_part_target, base_color, target_color, output_video_file_name) -> str:
 
     # dt_now = datetime.datetime.now(pytz.timezone('Asia/Tokyo'))
     # formatted_dt = dt_now.strftime('%Y-%m-%d-%H-%M-%S')
@@ -83,11 +120,6 @@ def generate_download_video(video_path, csv_path, target_csv_path, target_fps, o
 
                     converted_compare_keypoints = []
 
-                    base_hip_center = ((keypoints[23][0] + keypoints[24][0])//2,
-                                        (keypoints[23][1] + keypoints[24][1])//2)
-                    compare_hip_center = ((compare_keypoints[23][0] + compare_keypoints[24][0])//2,
-                                            (compare_keypoints[23][1] + compare_keypoints[24][1])//2)
-
                     ratio = 1
 
                     if compare_height != 0:
@@ -95,7 +127,7 @@ def generate_download_video(video_path, csv_path, target_csv_path, target_fps, o
 
                     for compare_keypoint in compare_keypoints:
                         adjusted_keypoint = get_adjusted_for_base_point(
-                            base_hip_center, compare_hip_center, compare_keypoint, ratio)
+                            get_body_part_points(keypoints, overlap_body_part_base), get_body_part_points(compare_keypoints, overlap_body_part_target), compare_keypoint, ratio)
                         converted_compare_keypoints.append(
                             adjusted_keypoint)
                         
@@ -114,6 +146,23 @@ def generate_download_video(video_path, csv_path, target_csv_path, target_fps, o
     out.release()
     
     return output_video_file_name
+
+def get_body_part_points(keypoints, body_part) -> tuple:
+    index = body_parts_mapping.get(body_part)
+    if index is not None:
+        if body_part == "waistCenter":
+            # 特別なケース: waistCenterの座標を計算
+            x = (keypoints[23][0] + keypoints[24][0]) // 2
+            y = (keypoints[23][1] + keypoints[24][1]) // 2
+            body_part_position = (x, y)
+            return body_part_position
+        else:
+            # 通常の場合: インデックスを使用して座標を取得
+            x, y = keypoints[index]
+            body_part_position = (x, y)
+            return body_part_position
+    else:
+        return (0, 0)
 
 
 def draw_human_pose(

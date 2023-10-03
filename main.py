@@ -4,7 +4,7 @@ import numpy as np
 from PyQt6.QtWidgets import QApplication, QWidget,QVBoxLayout, QHBoxLayout, QPushButton, QFileDialog, QSlider, QLabel, QSizePolicy, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QLineEdit, QComboBox
 from PyQt6.QtGui import QPixmap, QImage
 from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtWidgets import QProgressDialog
+from PyQt6.QtWidgets import QProgressDialog, QErrorMessage
 
 
 import pose_detection
@@ -68,6 +68,19 @@ class VideoPlayer(QWidget):
         self.resize(1600, 600)
 
     def generateVideo(self):
+        video_file_path = self.player1.get_video_file_path()
+        video_file_path2 = self.player2.get_video_file_path()
+        
+        if video_file_path == "" or video_file_path2 == "":
+            self.errorDialog = QErrorMessage(self)
+            self.errorDialog.setWindowTitle("Error")
+            self.errorDialog.showMessage("Please select video file.")
+            # Show this message againを表示しない
+            self.errorDialog.setWindowModality(Qt.WindowModality.WindowModal)
+            
+            self.errorDialog.show()
+            return
+        
         # プログレスダイアログの設定
         self.progressDialog = QProgressDialog("Processing...", None, 0, 0, self)
         self.progressDialog.setWindowTitle("Please Wait")
@@ -75,21 +88,30 @@ class VideoPlayer(QWidget):
         self.progressDialog.show()
         QApplication.processEvents()  # UIを更新
         
-        video_file_path = self.player1.get_video_file_path()
-        video_file_path2 = self.player2.get_video_file_path()
-        
         csv_path = f"exported/{video_file_path.split('/')[-1].split('.')[-2]}.csv"
         csv_path2 = f"exported/{video_file_path2.split('/')[-1].split('.')[-2]}.csv"
         
         target_fps = self.player2.get_video_fps()
-        overlap_frame_base = self.player1.get_current_frame()
-        overlap_frame_target = self.player2.get_current_frame()
         
         output_video_file_name = self.output_video_file_name_input.text()
         color1 = self.player1.getSelectedColor()
         color2 = self.player2.getSelectedColor()
+        
+        overlap_frame_base = self.player1.getOverlapFrame()
+        overlap_frame_target = self.player2.getOverlapFrame()
+        
+        if overlap_frame_base == None or overlap_frame_target == None:
+            self.errorDialog = QErrorMessage(self)
+            self.errorDialog.setWindowTitle("Error")
+            self.errorDialog.showMessage("Overlap Frame is invalid.")
+            self.errorDialog.show()
+            self.progressDialog.close()
+            return
+        
+        overlap_body_part_base = self.player1.overlap_body_part_combo_box.currentText()
+        overlap_body_part_target = self.player2.overlap_body_part_combo_box.currentText()
 
-        generate_video_with_bone.generate_download_video(video_file_path,csv_path, csv_path2, target_fps, overlap_frame_base, overlap_frame_target, color1, color2, output_video_file_name)
+        generate_video_with_bone.generate_download_video(video_file_path,csv_path, csv_path2, target_fps, overlap_frame_base, overlap_frame_target, overlap_body_part_base, overlap_body_part_target, color1, color2, output_video_file_name)
 
         # プログレスダイアログを閉じる
         self.progressDialog.close()
@@ -152,26 +174,47 @@ class SingleVideoPlayer(QWidget):
         self.slider.sliderMoved.connect(self.setPosition)
         self.layout.addWidget(self.slider)
         
-        self.bone_color_layout = QHBoxLayout()
+        self.setting_layout = QHBoxLayout()
         
-        self.bone_color_layout.addStretch(1)
+        self.setting_layout.addStretch(1)
+        
+        # 文字列を表示
+        self.overlap_frame_input_label = QLabel("Overlap Frame", self)
+        self.setting_layout.addWidget(self.overlap_frame_input_label)
+        
+        # 文字列を入力できる入力欄の設定
+        self.overlap_frame_input = QLineEdit(self)
+        self.overlap_frame_input.setFixedWidth(80)
+        self.overlap_frame_input.setStyleSheet("QLineEdit { border-radius: 5px; }")
+        self.setting_layout.addWidget(self.overlap_frame_input)
+        
+        # 文字列を表示
+        self.overlap_body_part_label = QLabel("Overlap Body Part", self)
+        self.setting_layout.addWidget(self.overlap_body_part_label)
+        
+        # 重ねる部位を選択できるプルダウンの設定
+        self.overlap_body_part_combo_box = QComboBox(self)
+        self.overlap_body_part_combo_box.addItems(generate_video_with_bone.body_parts_mapping.keys())
+        self.overlap_body_part_combo_box.setFixedWidth(120)
+        self.setting_layout.addWidget(self.overlap_body_part_combo_box)
         
         # 文字列を表示
         self.output_video_file_name_label = QLabel("Bone Color", self)
-        self.bone_color_layout.addWidget(self.output_video_file_name_label)
+        self.setting_layout.addWidget(self.output_video_file_name_label)
 
         # 色を選択できるプルダウンの設定
         self.colorComboBox = QComboBox(self)
         self.colorComboBox.addItems(["red", "blue", "green", "yellow", "white", "black"])
         self.colorComboBox.setFixedWidth(100)
-        self.bone_color_layout.addWidget(self.colorComboBox)
+        self.setting_layout.addWidget(self.colorComboBox)
         
-        self.layout.addLayout(self.bone_color_layout)
+        self.layout.addLayout(self.setting_layout)
 
         # メンバ変数の初期化
         self.cap = None
         self.currentFrame = None
         self.fps = 0
+        self.totalFrames = 0
         self.video_file_path = ""
 
     def openFile(self):
@@ -190,7 +233,7 @@ class SingleVideoPlayer(QWidget):
         QApplication.processEvents()  # UIを更新
         
         csv_path = pose_detection.pose_detection(self.video_file_path)
-        generated_video_path = generate_video_with_bone.generate_download_video(self.video_file_path, csv_path, "", 60, 0, 0, self.colorComboBox.currentText(), "blue", "")
+        generated_video_path = generate_video_with_bone.generate_download_video(self.video_file_path, csv_path, "", 60, 0, 0, "waistCenter", "waistCenter", self.colorComboBox.currentText(), "blue", "")
         
         if generated_video_path:
             self.cap = cv2.VideoCapture(generated_video_path)
@@ -267,6 +310,16 @@ class SingleVideoPlayer(QWidget):
     
     def get_video_fps(self):
         return self.fps
+    
+    def getOverlapFrame(self):
+        try:
+            overlap_frame = int(self.overlap_frame_input.text())
+            if 0 <= overlap_frame and overlap_frame <= self.totalFrames:
+                return overlap_frame
+            else:
+                return None
+        except:
+            return None
     
     def getSelectedColor(self):
         return self.colorComboBox.currentText()

@@ -22,11 +22,11 @@ class VideoPlayer(QWidget):
         self.playersLayout = QHBoxLayout()
 
         # 1つ目の動画プレイヤーの設定
-        self.player1 = SingleVideoPlayer(self)
+        self.player1 = SingleVideoPlayer(self, True)
         self.playersLayout.addWidget(self.player1)
 
         # 2つ目の動画プレイヤーの設定
-        self.player2 = SingleVideoPlayer(self)
+        self.player2 = SingleVideoPlayer(self, False)
         self.playersLayout.addWidget(self.player2)
 
         self.layout.addLayout(self.playersLayout)
@@ -117,7 +117,7 @@ class VideoPlayer(QWidget):
         self.progressDialog.close()
 
 class SingleVideoPlayer(QWidget):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, isBase=False):
         super().__init__(parent)
 
         # レイアウトの設定
@@ -126,7 +126,11 @@ class SingleVideoPlayer(QWidget):
         self.topLayout = QHBoxLayout()
 
         # ボタンの設定
-        self.openButton = QPushButton(" Select Video ", self)
+        if isBase:
+            self.openButton = QPushButton(f" Select Base Video", self)
+        else:
+            self.openButton = QPushButton(f" Select Overlap Video", self)
+            
         self.openButton.clicked.connect(self.openFile)
         self.openButton.setFixedSize(
             self.openButton.sizeHint())  # ボタンの横幅を文字がちょうど収まる程度に設定

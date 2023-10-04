@@ -2,8 +2,8 @@ import sys
 import cv2
 import numpy as np
 import pandas as pd
-from PyQt6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSlider, QLabel, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QComboBox)
-from PyQt6.QtGui import QPixmap, QImage
+from PyQt6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSlider, QLabel, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QComboBox, QCheckBox)
+from PyQt6.QtGui import QPixmap, QImage, QPainter, QPen, QFont
 from PyQt6.QtCore import Qt, QTimer
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -36,12 +36,24 @@ class GeneratedVideoPlayer(QWidget):
         self.figure, self.ax = plt.subplots()
         self.canvas = FigureCanvas(self.figure)
         self.layout.addWidget(self.canvas)
+        
 
         self.data = pd.read_csv(csv_path)
         self.base_data = self.data.filter(regex=" Base$")
         self.overlap_data = self.data.filter(regex=" Overlap$")
         
         self.pointComboBoxLayout = QHBoxLayout()
+        
+         # チェックボックスの追加
+        self.pointCheckBoxLayout = QHBoxLayout()
+        self.pointCheckBoxLayout.addStretch(1)
+        self.baseCheckBox = QCheckBox("Show Base Select Points", self)
+        self.baseCheckBox.setChecked(True)
+        self.targetCheckBox = QCheckBox("Show Target Select Points", self)
+        self.targetCheckBox.setChecked(True)
+        self.pointComboBoxLayout.addWidget(self.baseCheckBox)
+        self.pointComboBoxLayout.addWidget(self.targetCheckBox)
+        
         self.pointComboBoxLayout.addStretch(1)
         self.pointAComboBoxLabel = QLabel("pointA", self)
         self.pointComboBoxLayout.addWidget(self.pointAComboBoxLabel)
@@ -67,6 +79,8 @@ class GeneratedVideoPlayer(QWidget):
 
         self.layout.addLayout(self.pointComboBoxLayout)
 
+        self.baseCheckBox.stateChanged.connect(self.update_graph)
+        self.targetCheckBox.stateChanged.connect(self.update_graph)
         self.comboBox.currentIndexChanged.connect(self.update_graph)
         self.pointAComboBox.currentIndexChanged.connect(self.update_graph)
         self.pointBComboBox.currentIndexChanged.connect(self.update_graph)
@@ -96,6 +110,10 @@ class GeneratedVideoPlayer(QWidget):
         return 180 - angles_deg #時計回りになるように180度引く
 
     def update_graph(self):
+        show_base = self.baseCheckBox.isChecked()
+        show_target = self.targetCheckBox.isChecked()
+        self.player1.set_show_points(show_base, show_target)
+        
         self.ax.clear()
         if self.comboBox.currentText() == "positionX":
             part_name = self.pointAComboBox.currentText()
@@ -150,9 +168,44 @@ class GeneratedVideoPlayer(QWidget):
             self.ax.plot(angles_base, label="Base")
             angles_overlap = self.calculate_angle_between_three_points(pointA_overlap, pointB_overlap, pointC_overlap)
             self.ax.plot(angles_overlap, label="Overlap")
+        
+        current_frame = self.player1.get_current_frame() - 1
+        if self.comboBox.currentText() == "positionX":
+            if current_frame < len(base_dataX):
+                    current_value_base = base_dataX[current_frame]
+                    self.ax.scatter([current_frame], [current_value_base], color='b')
+                    self.ax.text(0.98, 0.92, f"Base: {current_value_base:.2f}", transform=self.ax.transAxes,
+                             verticalalignment='top', horizontalalignment='right', color='b')
+            if current_frame < len(overlap_dataX):
+                current_value_overlap = overlap_dataX[current_frame]
+                self.ax.scatter([current_frame], [current_value_overlap], color='orange')
+                self.ax.text(0.98, 0.8, f"Overlap: {current_value_overlap:.2f}", transform=self.ax.transAxes,
+                             verticalalignment='top', horizontalalignment='right', color='orange')
+        elif self.comboBox.currentText() == "positionY":
+            if current_frame < len(base_dataY):
+                current_value_base = base_dataY[current_frame]
+                self.ax.scatter([current_frame], [current_value_base], color='b')
+                self.ax.text(0.98, 0.92, f"Base: {current_value_base:.2f}", transform=self.ax.transAxes,
+                             verticalalignment='top', horizontalalignment='right', color='b')
+            if current_frame < len(overlap_dataY):
+                current_value_overlap = overlap_dataY[current_frame]
+                self.ax.scatter([current_frame], [current_value_overlap], color='orange')
+                self.ax.text(0.98, 0.8, f"Overlap: {current_value_overlap:.2f}", transform=self.ax.transAxes,
+                             verticalalignment='top', horizontalalignment='right', color='orange')
+                
+        elif self.comboBox.currentText() == "angle":
+            if current_frame < len(angles_base):
+                current_value_base = angles_base[current_frame]
+                self.ax.scatter([current_frame], [current_value_base], color='b')
+                self.ax.text(0.98, 0.92, f"Base: {current_value_base:.2f}", transform=self.ax.transAxes,
+                             verticalalignment='top', horizontalalignment='right', color='b')
+            if current_frame < len(angles_overlap):
+                current_value_overlap = angles_overlap[current_frame]
+                self.ax.scatter([current_frame], [current_value_overlap], color='orange')
+                self.ax.text(0.98, 0.8, f"Overlap: {current_value_overlap:.2f}", transform=self.ax.transAxes,
+                             verticalalignment='top', horizontalalignment='right', color='orange')
 
         self.ax.axvline(x=self.player1.get_current_frame() - 1, color='r', linestyle='--')
-        self.ax.legend()
         self.ax.set_xlim([0, self.player1.get_total_frames()])
         self.canvas.draw()
         
@@ -167,10 +220,6 @@ class GeneratedVideoPlayer(QWidget):
         dataBase[f"{point_name}Y Base"] = (dataBase[f"{point1_name}Y Base"] + dataBase[f"{point2_name}Y Base"]) / 2
         dataOverlap[f"{point_name}X Overlap"] = (dataOverlap[f"{point1_name}X Overlap"] + dataOverlap[f"{point2_name}X Overlap"]) / 2
         dataOverlap[f"{point_name}Y Overlap"] = (dataOverlap[f"{point1_name}Y Overlap"] + dataOverlap[f"{point2_name}Y Overlap"]) / 2
-
-        
-    # def getCenter(a, b):
-    #     return [(x + y) / 2 for x, y in zip(a, b)]
         
     def update_ui(self):
         if self.comboBox.currentText() == "positionX" or self.comboBox.currentText() == "positionY":
@@ -197,6 +246,9 @@ class SingleVideoPlayer(QWidget):
         self.currentFrame = None
         self.fps = 0
         self.totalFrames = 0
+        self.draw_points = {}
+        self.show_base = False
+        self.show_target = False
 
         self.layout = QVBoxLayout(self)
         self.topLayout = QHBoxLayout()
@@ -237,10 +289,14 @@ class SingleVideoPlayer(QWidget):
             self.slider.setRange(0, self.totalFrames)
             
             self.timer = QTimer(self)
-            self.timer.timeout.connect(self.updateFrame)
+            self.timer.timeout.connect(self.nextFrame)
             self.timer.start(int(1000 / self.fps))
         else:
             return
+        
+    def nextFrame(self):
+        self.updateFrame()
+        self.slider.setValue(int(self.cap.get(cv2.CAP_PROP_POS_FRAMES)))
 
     def updateFrame(self):
         ret, frame = self.cap.read()
@@ -248,6 +304,57 @@ class SingleVideoPlayer(QWidget):
             self.currentFrame = frame
             height, width, channel = frame.shape
             bytesPerLine = 3 * width
+
+            # ここで、親ウィジェットから選択されたポイントの座標を取得します。
+            pointA_name = self.parent().pointAComboBox.currentText()
+            if pointA_name == "waistCenter" or pointA_name == "shoulderCenter":
+                self.parent().calculate_center_point(self.parent().base_data, self.parent().overlap_data, pointA_name)
+            
+            current_frame_num = self.get_current_frame() - 1
+
+            # pointAに円を描画します。
+            if self.show_base:
+                if current_frame_num < len(self.parent().base_data):
+                    pointA_coord_base = self.parent().base_data.loc[current_frame_num, [f"{pointA_name}X Base", f"{pointA_name}Y Base"]].values
+                    cv2.circle(frame, (int(pointA_coord_base[0]), int(pointA_coord_base[1])), radius=12, color=(255, 0, 0), thickness=-4)
+            if self.show_target:
+                if current_frame_num < len(self.parent().overlap_data):
+                    pointA_coord_overlap = self.parent().overlap_data.loc[current_frame_num, [f"{pointA_name}X Overlap", f"{pointA_name}Y Overlap"]].values
+                    cv2.circle(frame, (int(pointA_coord_overlap[0]), int(pointA_coord_overlap[1])), radius=12, color=(0, 128, 255), thickness=-4)
+                
+
+            # angleが選択されている場合、追加のポイントと線分を描画します。
+            if self.parent().comboBox.currentText() == "angle":
+                pointB_name = self.parent().pointBComboBox.currentText()
+                pointC_name = self.parent().pointCComboBox.currentText()
+                
+                if pointB_name == "waistCenter" or pointB_name == "shoulderCenter":
+                    self.parent().calculate_center_point(self.parent().base_data, self.parent().overlap_data, pointB_name)
+                if pointC_name == "waistCenter" or pointC_name == "shoulderCenter":
+                    self.parent().calculate_center_point(self.parent().base_data, self.parent().overlap_data, pointC_name)
+
+                if self.show_base:
+                    if current_frame_num < len(self.parent().base_data):
+                        pointB_coord_base = self.parent().base_data.loc[current_frame_num, [f"{pointB_name}X Base", f"{pointB_name}Y Base"]].values
+                        cv2.circle(frame, (int(pointB_coord_base[0]), int(pointB_coord_base[1])), radius=12, color=(255, 0, 0), thickness=-4)
+                        cv2.line(frame, (int(pointA_coord_base[0]), int(pointA_coord_base[1])), (int(pointB_coord_base[0]), int(pointB_coord_base[1])), (255, 0, 0), 2)
+                        
+                        if pointC_name != "horizontal":
+                            pointC_coord_base = self.parent().base_data.loc[current_frame_num, [f"{pointC_name}X Base", f"{pointC_name}Y Base"]].values
+                            cv2.circle(frame, (int(pointC_coord_base[0]), int(pointC_coord_base[1])), radius=12, color=(255, 0, 0), thickness=-4)
+                            cv2.line(frame, (int(pointB_coord_base[0]), int(pointB_coord_base[1])), (int(pointC_coord_base[0]), int(pointC_coord_base[1])), (255, 0, 0), 2)
+                    
+                if self.show_target:
+                    if current_frame_num < len(self.parent().overlap_data):
+                        pointB_coord_overlap = self.parent().overlap_data.loc[current_frame_num, [f"{pointB_name}X Overlap", f"{pointB_name}Y Overlap"]].values
+                        cv2.circle(frame, (int(pointB_coord_overlap[0]), int(pointB_coord_overlap[1])), radius=12, color=(0, 128, 255), thickness=-4)
+                        cv2.line(frame, (int(pointA_coord_overlap[0]), int(pointA_coord_overlap[1])), (int(pointB_coord_overlap[0]), int(pointB_coord_overlap[1])), (0, 128, 255), 2)
+                        if pointC_name != "horizontal":
+                            pointC_coord_overlap = self.parent().overlap_data.loc[current_frame_num, [f"{pointC_name}X Overlap", f"{pointC_name}Y Overlap"]].values
+                            cv2.circle(frame, (int(pointC_coord_overlap[0]), int(pointC_coord_overlap[1])), radius=12, color=(0, 128, 255), thickness=-4)
+                            cv2.line(frame, (int(pointB_coord_overlap[0]), int(pointB_coord_overlap[1])), (int(pointC_coord_overlap[0]), int(pointC_coord_overlap[1])), (0, 128, 255), 2)
+                
+
             qImg = QImage(frame.data, width, height, bytesPerLine, QImage.Format.Format_RGB888).rgbSwapped()
             pixmap = QPixmap.fromImage(qImg)
             self.scene.clear()
@@ -255,9 +362,14 @@ class SingleVideoPlayer(QWidget):
             self.graphicsView.setScene(self.scene)
             self.graphicsView.fitInView(self.scene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
             self.updateInfoLabel()
-            self.slider.setValue(int(self.cap.get(cv2.CAP_PROP_POS_FRAMES)))
         else:
             self.timer.stop()
+            
+    def set_show_points(self, show_base, show_target):
+        self.show_base = show_base
+        self.show_target = show_target
+        self.updateFrame()
+
 
     def startPlay(self):
         if self.cap:
@@ -274,20 +386,7 @@ class SingleVideoPlayer(QWidget):
     def setPosition(self, position):
         if self.cap:
             self.cap.set(cv2.CAP_PROP_POS_FRAMES, position)
-            ret, frame = self.cap.read()
-            if ret:
-                self.currentFrame = frame
-                height, width, channel = frame.shape
-                bytesPerLine = 3 * width
-                qImg = QImage(frame.data, width, height, bytesPerLine, QImage.Format.Format_RGB888).rgbSwapped()
-                pixmap = QPixmap.fromImage(qImg)
-                self.scene.clear()
-                self.scene.addPixmap(pixmap)
-                self.graphicsView.setScene(self.scene)
-                self.graphicsView.fitInView(self.scene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
-                self.updateInfoLabel()
-            else:
-                self.timer.stop()
+            self.updateFrame()
 
     def updateInfoLabel(self):
         currentFrameNum = int(self.cap.get(cv2.CAP_PROP_POS_FRAMES))

@@ -9,6 +9,7 @@ from PyQt6.QtWidgets import QProgressDialog, QErrorMessage
 
 import pose_detection
 import generate_video_with_bone
+import generated_video_player
 
 
 class VideoPlayer(QWidget):
@@ -41,6 +42,12 @@ class VideoPlayer(QWidget):
         self.closeButton.clicked.connect(self.close)
         self.functionsLayout.addWidget(self.closeButton)
         
+        self.nextWindow = QPushButton(" デバッグ用 ", self)
+        self.nextWindow.setFixedSize(
+            self.nextWindow.sizeHint())  # ボタンの横幅を文字がちょうど収まる程度に設定
+        self.nextWindow.clicked.connect(self.openNextWindow)
+        self.functionsLayout.addWidget(self.nextWindow)
+        
         self.functionsLayout.addStretch(1)
         
         # 文字列を表示
@@ -66,6 +73,10 @@ class VideoPlayer(QWidget):
         self.setLayout(self.layout)
         self.setWindowTitle("Movement Comparison Video Generator")
         self.resize(1600, 600)
+        
+    def openNextWindow(self):
+        self.generated_video_view = generated_video_player.GeneratedVideoPlayer("exported/test-data.mp4", "exported/test-data.csv")
+        self.generated_video_view.show()
 
     def generateVideo(self):
         video_file_path = self.player1.get_video_file_path()
@@ -111,10 +122,13 @@ class VideoPlayer(QWidget):
         overlap_body_part_base = self.player1.overlap_body_part_combo_box.currentText()
         overlap_body_part_target = self.player2.overlap_body_part_combo_box.currentText()
 
-        generate_video_with_bone.generate_download_video(video_file_path,csv_path, csv_path2, target_fps, overlap_frame_base, overlap_frame_target, overlap_body_part_base, overlap_body_part_target, color1, color2, output_video_file_name)
+        generated_video_path, generated_csv_path = generate_video_with_bone.generate_download_video(video_file_path,csv_path, csv_path2, target_fps, overlap_frame_base, overlap_frame_target, overlap_body_part_base, overlap_body_part_target, color1, color2, output_video_file_name)
 
         # プログレスダイアログを閉じる
         self.progressDialog.close()
+        
+        self.generated_video_view = generated_video_player.GeneratedVideoPlayer(generated_video_path, generated_csv_path)
+        self.generated_video_view.show()
 
 class SingleVideoPlayer(QWidget):
     def __init__(self, parent=None, isBase=False):
@@ -237,7 +251,7 @@ class SingleVideoPlayer(QWidget):
         QApplication.processEvents()  # UIを更新
         
         csv_path = pose_detection.pose_detection(self.video_file_path)
-        generated_video_path = generate_video_with_bone.generate_download_video(self.video_file_path, csv_path, "", 60, 0, 0, "waistCenter", "waistCenter", self.colorComboBox.currentText(), "blue", "")
+        generated_video_path, generated_csv_path = generate_video_with_bone.generate_download_video(self.video_file_path, csv_path, "", 60, 0, 0, "waistCenter", "waistCenter", self.colorComboBox.currentText(), "blue", "")
         
         if generated_video_path:
             self.cap = cv2.VideoCapture(generated_video_path)

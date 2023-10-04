@@ -6,6 +6,8 @@ import datetime
 import pytz
 import math
 
+import pose_detection
+
 colors = {
     "red": (0, 0, 255),
     "blue": (255, 0, 0),
@@ -40,16 +42,16 @@ body_parts_mapping = {
     "rightIndex": 20,
     "leftThumb": 21,
     "rightThumb": 22,
-    "leftHip": 25,
-    "rightHip": 26,
-    "leftKnee": 27,
-    "rightKnee": 28,
-    "leftAnkle": 29,
-    "rightAnkle": 30,
-    "leftHeel": 31,
-    "rightHeel": 32,
-    "leftFootIndex": 33,
-    "rightFootIndex": 34
+    "leftHip": 23,
+    "rightHip": 24,
+    "leftKnee": 25,
+    "rightKnee": 26,
+    "leftAnkle": 27,
+    "rightAnkle": 28,
+    "leftHeel": 29,
+    "rightHeel": 30,
+    "leftFootIndex": 31,
+    "rightFootIndex": 32
 }
 
 def generate_download_video(video_path, csv_path, target_csv_path, target_fps, overlap_frame_base, overlap_frame_target, overlap_body_part_base, overlap_body_part_target, base_color, target_color, output_video_file_name) -> str:
@@ -64,6 +66,8 @@ def generate_download_video(video_path, csv_path, target_csv_path, target_fps, o
             output_video_file_name = f"exported/{video_path.split('/')[-1].split('.')[0]}_with_{target_csv_path.split('/')[-1].split('.')[0]}_output.mp4"
     else:
         output_video_file_name = f"exported/{output_video_file_name}.mp4"
+        
+    output_csv_path = f"{output_video_file_name.split('.')[-2]}.csv"
             
     
     with open(csv_path, encoding='utf8', newline='') as f:
@@ -72,6 +76,17 @@ def generate_download_video(video_path, csv_path, target_csv_path, target_fps, o
         with open(target_csv_path, encoding='utf8', newline='') as f:
             csv_reader_target = list(csv.reader(
                 f, delimiter=' ', quotechar='|'))
+        csvfile = open(output_csv_path, "w", newline="")
+        writer = csv.writer(csvfile)
+            
+        # 配列を生成
+        body_points_array = []
+
+        for i in range(33):
+            name = list(body_parts_mapping.keys())[i+1]
+            body_points_array.extend([f"{name}X Base", f"{name}X Overlap", f"{name}Y Base", f"{name}Y Overlap"])
+
+        writer.writerow(body_points_array)
 
     cap = cv2.VideoCapture(video_path)
     fps = cap.get(cv2.CAP_PROP_FPS)
@@ -133,6 +148,18 @@ def generate_download_video(video_path, csv_path, target_csv_path, target_fps, o
                         
                     drawed_image = draw_human_pose(
                         drawed_image, converted_compare_keypoints,  colors[target_color])
+                    
+                    if target_csv_path != "":
+                    
+                        row_data = []
+                        for i in body_parts_mapping.values():
+                            if isinstance(i, int):
+                                row_data.append(keypoints[i][0])
+                                row_data.append(converted_compare_keypoints[i][0])
+                                row_data.append(keypoints[i][1])
+                                row_data.append(converted_compare_keypoints[i][1])
+
+                        writer.writerow(row_data)
 
             out.write(cv2.resize(drawed_image,   # 画像データを指定
                                     (w, h)   # リサイズ後のサイズを指定
@@ -145,7 +172,10 @@ def generate_download_video(video_path, csv_path, target_csv_path, target_fps, o
     cap.release()
     out.release()
     
-    return output_video_file_name
+    if target_csv_path != "":
+        csvfile.close()
+
+    return output_video_file_name, output_csv_path
 
 def get_body_part_points(keypoints, body_part) -> tuple:
     index = body_parts_mapping.get(body_part)

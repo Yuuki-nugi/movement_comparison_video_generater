@@ -34,11 +34,6 @@ class VideoPlayer(QWidget):
         self.close_button.clicked.connect(self.close)
         self.functions_layout.addWidget(self.close_button)
 
-        self.next_window = QPushButton(" Debug ", self)
-        self.next_window.setFixedSize(self.next_window.sizeHint())
-        self.next_window.clicked.connect(self.open_next_window)
-        self.functions_layout.addWidget(self.next_window)
-
         self.functions_layout.addStretch(1)
 
         self.output_video_file_name_label = QLabel("Output File Name", self)
@@ -59,10 +54,6 @@ class VideoPlayer(QWidget):
         self.setLayout(self.layout)
         self.setWindowTitle("Movement Comparison Video Generator")
         self.resize(1600, 600)
-
-    def open_next_window(self):
-        self.generated_video_view = generated_video_player.GeneratedVideoPlayer("exported/test1.mp4", "exported/test1.csv")
-        self.generated_video_view.show()
 
     def generate_video(self):
         video_file_path = self.player1.get_video_file_path()

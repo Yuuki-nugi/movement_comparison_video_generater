@@ -154,7 +154,6 @@ def generate_download_video(video_path, csv_path, target_csv_path, target_fps, o
                         row_data = []
                         for i in body_parts_mapping.values():
                             if isinstance(i, int):
-                                print("i", i)
                                 row_data.append(keypoints[i][0])
                                 row_data.append(converted_compare_keypoints[i][0])
                                 row_data.append(keypoints[i][1])

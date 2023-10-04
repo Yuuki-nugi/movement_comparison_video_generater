@@ -16,226 +16,193 @@ class VideoPlayer(QWidget):
     def __init__(self):
         super().__init__()
 
-        # メインレイアウトの設定
         self.layout = QVBoxLayout(self)
+        self.players_layout = QHBoxLayout()
 
-        # 2つの動画プレイヤーのレイアウト
-        self.playersLayout = QHBoxLayout()
-
-        # 1つ目の動画プレイヤーの設定
         self.player1 = SingleVideoPlayer(self, True)
-        self.playersLayout.addWidget(self.player1)
+        self.players_layout.addWidget(self.player1)
 
-        # 2つ目の動画プレイヤーの設定
         self.player2 = SingleVideoPlayer(self, False)
-        self.playersLayout.addWidget(self.player2)
+        self.players_layout.addWidget(self.player2)
 
-        self.layout.addLayout(self.playersLayout)
-        
-        
-        self.functionsLayout = QHBoxLayout() 
+        self.layout.addLayout(self.players_layout)
 
-        # 閉じるボタンの設定
-        self.closeButton = QPushButton(" Close ", self)
-        self.closeButton.setFixedSize(
-            self.closeButton.sizeHint())  # ボタンの横幅を文字がちょうど収まる程度に設定
-        self.closeButton.clicked.connect(self.close)
-        self.functionsLayout.addWidget(self.closeButton)
-        
-        self.nextWindow = QPushButton(" デバッグ用 ", self)
-        self.nextWindow.setFixedSize(
-            self.nextWindow.sizeHint())  # ボタンの横幅を文字がちょうど収まる程度に設定
-        self.nextWindow.clicked.connect(self.openNextWindow)
-        self.functionsLayout.addWidget(self.nextWindow)
-        
-        self.functionsLayout.addStretch(1)
-        
-        # 文字列を表示
+        self.functions_layout = QHBoxLayout()
+
+        self.close_button = QPushButton(" Close ", self)
+        self.close_button.setFixedSize(self.close_button.sizeHint())
+        self.close_button.clicked.connect(self.close)
+        self.functions_layout.addWidget(self.close_button)
+
+        self.next_window = QPushButton(" Debug ", self)
+        self.next_window.setFixedSize(self.next_window.sizeHint())
+        self.next_window.clicked.connect(self.open_next_window)
+        self.functions_layout.addWidget(self.next_window)
+
+        self.functions_layout.addStretch(1)
+
         self.output_video_file_name_label = QLabel("Output File Name", self)
-        self.functionsLayout.addWidget(self.output_video_file_name_label)
-        
-        # 文字列を入力できる入力欄の設定
+        self.functions_layout.addWidget(self.output_video_file_name_label)
+
         self.output_video_file_name_input = QLineEdit(self)
         self.output_video_file_name_input.setFixedWidth(320)
         self.output_video_file_name_input.setStyleSheet("QLineEdit { border-radius: 5px; }")
-        self.functionsLayout.addWidget(self.output_video_file_name_input)
+        self.functions_layout.addWidget(self.output_video_file_name_input)
 
-        # 動画生成ボタンの設定
-        self.generateButton = QPushButton(" Generate Video ", self)
-        self.generateButton.clicked.connect(self.generateVideo)
-        self.generateButton.setFixedSize(
-            self.generateButton.sizeHint())  # ボタンの横幅を文字がちょうど収まる程度に設定
-        self.functionsLayout.addWidget(self.generateButton)
+        self.generate_button = QPushButton(" Generate Video ", self)
+        self.generate_button.clicked.connect(self.generate_video)
+        self.generate_button.setFixedSize(self.generate_button.sizeHint())
+        self.functions_layout.addWidget(self.generate_button)
 
-        self.layout.addLayout(self.functionsLayout)
+        self.layout.addLayout(self.functions_layout)
 
-        # ウィンドウの設定
         self.setLayout(self.layout)
         self.setWindowTitle("Movement Comparison Video Generator")
         self.resize(1600, 600)
-        
-    def openNextWindow(self):
-        self.generated_video_view = generated_video_player.GeneratedVideoPlayer("exported/test-data.mp4", "exported/test-data.csv")
+
+    def open_next_window(self):
+        self.generated_video_view = generated_video_player.GeneratedVideoPlayer("exported/test1.mp4", "exported/test1.csv")
         self.generated_video_view.show()
 
-    def generateVideo(self):
+    def generate_video(self):
         video_file_path = self.player1.get_video_file_path()
         video_file_path2 = self.player2.get_video_file_path()
-        
+
         if video_file_path == "" or video_file_path2 == "":
-            self.errorDialog = QErrorMessage(self)
-            self.errorDialog.setWindowTitle("Error")
-            self.errorDialog.showMessage("Please select video file.")
-            # Show this message againを表示しない
-            self.errorDialog.setWindowModality(Qt.WindowModality.WindowModal)
-            
-            self.errorDialog.show()
+            self.error_dialog = QErrorMessage(self)
+            self.error_dialog.setWindowTitle("Error")
+            self.error_dialog.showMessage("Please select video file.")
+            self.error_dialog.setWindowModality(Qt.WindowModality.WindowModal)
+
+            self.error_dialog.show()
             return
-        
-        # プログレスダイアログの設定
-        self.progressDialog = QProgressDialog("Processing...", None, 0, 0, self)
-        self.progressDialog.setWindowTitle("Please Wait")
-        self.progressDialog.setModal(True)  # 他のウィンドウの操作をブロック
-        self.progressDialog.show()
-        QApplication.processEvents()  # UIを更新
-        
+
+        self.progress_dialog = QProgressDialog("Processing...", None, 0, 0, self)
+        self.progress_dialog.setWindowTitle("Please Wait")
+        self.progress_dialog.setModal(True)
+        self.progress_dialog.show()
+        QApplication.processEvents()
+
         csv_path = f"exported/{video_file_path.split('/')[-1].split('.')[-2]}.csv"
         csv_path2 = f"exported/{video_file_path2.split('/')[-1].split('.')[-2]}.csv"
-        
+
         target_fps = self.player2.get_video_fps()
-        
+
         output_video_file_name = self.output_video_file_name_input.text()
-        color1 = self.player1.getSelectedColor()
-        color2 = self.player2.getSelectedColor()
-        
-        overlap_frame_base = self.player1.getOverlapFrame()
-        overlap_frame_target = self.player2.getOverlapFrame()
-        
-        if overlap_frame_base == None or overlap_frame_target == None:
-            self.errorDialog = QErrorMessage(self)
-            self.errorDialog.setWindowTitle("Error")
-            self.errorDialog.showMessage("Overlap Frame is invalid.")
-            self.errorDialog.show()
-            self.progressDialog.close()
+        color1 = self.player1.get_selected_color()
+        color2 = self.player2.get_selected_color()
+
+        overlap_frame_base = self.player1.get_overlap_frame()
+        overlap_frame_target = self.player2.get_overlap_frame()
+
+        if overlap_frame_base is None or overlap_frame_target is None:
+            self.error_dialog = QErrorMessage(self)
+            self.error_dialog.setWindowTitle("Error")
+            self.error_dialog.showMessage("Overlap Frame is invalid.")
+            self.error_dialog.show()
+            self.progress_dialog.close()
             return
-        
+
         overlap_body_part_base = self.player1.overlap_body_part_combo_box.currentText()
         overlap_body_part_target = self.player2.overlap_body_part_combo_box.currentText()
 
-        generated_video_path, generated_csv_path = generate_video_with_bone.generate_download_video(video_file_path,csv_path, csv_path2, target_fps, overlap_frame_base, overlap_frame_target, overlap_body_part_base, overlap_body_part_target, color1, color2, output_video_file_name)
+        generated_video_path, generated_csv_path = generate_video_with_bone.generate_download_video(
+            video_file_path, csv_path, csv_path2, target_fps, overlap_frame_base,
+            overlap_frame_target, overlap_body_part_base, overlap_body_part_target,
+            color1, color2, output_video_file_name
+        )
 
-        # プログレスダイアログを閉じる
-        self.progressDialog.close()
-        
+        self.progress_dialog.close()
+
         self.generated_video_view = generated_video_player.GeneratedVideoPlayer(generated_video_path, generated_csv_path)
         self.generated_video_view.show()
 
 class SingleVideoPlayer(QWidget):
-    def __init__(self, parent=None, isBase=False):
+    def __init__(self, parent=None, is_base=False):
         super().__init__(parent)
 
-        # レイアウトの設定
         self.layout = QVBoxLayout(self)
+        self.top_layout = QHBoxLayout()
 
-        self.topLayout = QHBoxLayout()
-
-        # ボタンの設定
-        if isBase:
-            self.openButton = QPushButton(f" Select Base Video", self)
+        if is_base:
+            self.open_button = QPushButton(" Select Base Video", self)
         else:
-            self.openButton = QPushButton(f" Select Overlap Video", self)
-            
-        self.openButton.clicked.connect(self.openFile)
-        self.openButton.setFixedSize(
-            self.openButton.sizeHint())  # ボタンの横幅を文字がちょうど収まる程度に設定
-        self.topLayout.addWidget(self.openButton)
+            self.open_button = QPushButton(" Select Overlap Video", self)
 
-        # 動画情報のラベル
-        self.infoLabel = QLabel(self)
-        self.infoLabel.setAlignment(Qt.AlignmentFlag.AlignRight)
-        self.topLayout.addWidget(self.infoLabel)
+        self.open_button.clicked.connect(self.open_file)
+        self.open_button.setFixedSize(self.open_button.sizeHint())
+        self.top_layout.addWidget(self.open_button)
 
-        self.layout.addLayout(self.topLayout)
+        self.info_label = QLabel(self)
+        self.info_label.setAlignment(Qt.AlignmentFlag.AlignRight)
+        self.top_layout.addWidget(self.info_label)
 
-        # ビデオ表示の設定
-        self.graphicsView = QGraphicsView(self)
+        self.layout.addLayout(self.top_layout)
+
+        self.graphics_view = QGraphicsView(self)
         self.scene = QGraphicsScene()
-        self.graphicsView.setScene(self.scene)
-        self.layout.addWidget(self.graphicsView)
+        self.graphics_view.setScene(self.scene)
+        self.layout.addWidget(self.graphics_view)
 
-        # タイマーの設定
         self.timer = QTimer(self)
-        self.timer.timeout.connect(self.updateFrame)
+        self.timer.timeout.connect(self.update_frame)
 
-        # コントロールボタンのレイアウト
-        self.controlLayout = QHBoxLayout()
+        self.control_layout = QHBoxLayout()
 
-        # 再生ボタンの設定
-        self.playButton = QPushButton("▶", self)  # 再生アイコン
-        self.playButton.clicked.connect(self.startPlay)
-        self.controlLayout.addWidget(self.playButton)
+        self.play_button = QPushButton("▶", self)
+        self.play_button.clicked.connect(self.start_play)
+        self.control_layout.addWidget(self.play_button)
 
-        # 続きから再生ボタンの設定
-        self.resumeButton = QPushButton("⏯", self)  # 続きから再生アイコン
-        self.resumeButton.clicked.connect(self.resumePlay)
-        self.controlLayout.addWidget(self.resumeButton)
+        self.resume_button = QPushButton("⏯", self)
+        self.resume_button.clicked.connect(self.resume_play)
+        self.control_layout.addWidget(self.resume_button)
 
-        # 停止ボタンの設定
-        self.stopButton = QPushButton("⏹", self)  # 停止アイコン
-        self.stopButton.clicked.connect(self.stopPlay)
-        self.controlLayout.addWidget(self.stopButton)
+        self.stop_button = QPushButton("⏹", self)
+        self.stop_button.clicked.connect(self.stop_play)
+        self.control_layout.addWidget(self.stop_button)
 
-        self.layout.addLayout(self.controlLayout)
+        self.layout.addLayout(self.control_layout)
 
-        # 再生位置を示すスライダーバーの追加
         self.slider = QSlider(Qt.Orientation.Horizontal)
-        self.slider.sliderMoved.connect(self.setPosition)
+        self.slider.sliderMoved.connect(self.set_position)
         self.layout.addWidget(self.slider)
-        
+
         self.setting_layout = QHBoxLayout()
-        
         self.setting_layout.addStretch(1)
-        
-        # 文字列を表示
+
         self.overlap_frame_input_label = QLabel("Overlap Frame", self)
         self.setting_layout.addWidget(self.overlap_frame_input_label)
-        
-        # 文字列を入力できる入力欄の設定
+
         self.overlap_frame_input = QLineEdit(self)
         self.overlap_frame_input.setFixedWidth(80)
         self.overlap_frame_input.setStyleSheet("QLineEdit { border-radius: 5px; }")
         self.setting_layout.addWidget(self.overlap_frame_input)
-        
-        # 文字列を表示
+
         self.overlap_body_part_label = QLabel("Overlap Body Part", self)
         self.setting_layout.addWidget(self.overlap_body_part_label)
-        
-        # 重ねる部位を選択できるプルダウンの設定
+
         self.overlap_body_part_combo_box = QComboBox(self)
         self.overlap_body_part_combo_box.addItems(generate_video_with_bone.body_parts_mapping.keys())
         self.overlap_body_part_combo_box.setFixedWidth(120)
         self.setting_layout.addWidget(self.overlap_body_part_combo_box)
-        
-        # 文字列を表示
+
         self.output_video_file_name_label = QLabel("Bone Color", self)
         self.setting_layout.addWidget(self.output_video_file_name_label)
 
-        # 色を選択できるプルダウンの設定
-        self.colorComboBox = QComboBox(self)
-        self.colorComboBox.addItems(["red", "blue", "green", "yellow", "white", "black"])
-        self.colorComboBox.setFixedWidth(100)
-        self.setting_layout.addWidget(self.colorComboBox)
-        
+        self.color_combo_box = QComboBox(self)
+        self.color_combo_box.addItems(["red", "blue", "green", "yellow", "white", "black"])
+        self.color_combo_box.setFixedWidth(100)
+        self.setting_layout.addWidget(self.color_combo_box)
+
         self.layout.addLayout(self.setting_layout)
 
-        # メンバ変数の初期化
         self.cap = None
-        self.currentFrame = None
+        self.current_frame = None
         self.fps = 0
-        self.totalFrames = 0
+        self.total_frames = 0
         self.video_file_path = ""
 
-    def openFile(self):
+    def open_file(self):
         self.video_file_path, _ = QFileDialog.getOpenFileName(
             self, "Open Movie", "", "All Files (*);;Movie Files (*.mp4 *.avi)")
         
@@ -251,7 +218,7 @@ class SingleVideoPlayer(QWidget):
         QApplication.processEvents()  # UIを更新
         
         csv_path = pose_detection.pose_detection(self.video_file_path)
-        generated_video_path, generated_csv_path = generate_video_with_bone.generate_download_video(self.video_file_path, csv_path, "", 60, 0, 0, "waistCenter", "waistCenter", self.colorComboBox.currentText(), "blue", "")
+        generated_video_path, generated_csv_path = generate_video_with_bone.generate_download_video(self.video_file_path, csv_path, "", 60, 0, 0, "waistCenter", "waistCenter", self.color_combo_box.currentText(), "blue", "")
         
         if generated_video_path:
             self.cap = cv2.VideoCapture(generated_video_path)
@@ -263,7 +230,7 @@ class SingleVideoPlayer(QWidget):
         # プログレスダイアログを閉じる
         self.progressDialog.close()
 
-    def updateFrame(self):
+    def update_frame(self):
         ret, frame = self.cap.read()
         if ret:
             self.currentFrame = frame
@@ -274,27 +241,27 @@ class SingleVideoPlayer(QWidget):
             pixmap = QPixmap.fromImage(qImg)
             self.scene.clear()
             self.scene.addPixmap(pixmap)
-            self.graphicsView.setScene(self.scene)
-            self.graphicsView.fitInView(
+            self.graphics_view.setScene(self.scene)
+            self.graphics_view.fitInView(
                 self.scene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
-            self.updateInfoLabel()
+            self.update_info_label()
             self.slider.setValue(int(self.cap.get(cv2.CAP_PROP_POS_FRAMES)))
         else:
             self.timer.stop()
 
-    def startPlay(self):
+    def start_play(self):
         if self.cap:
             self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
             self.timer.start(int(1000 / self.fps))
 
-    def resumePlay(self):
+    def resume_play(self):
         if self.cap:
             self.timer.start(int(1000 / self.fps))
 
-    def stopPlay(self):
+    def stop_play(self):
         self.timer.stop()
 
-    def setPosition(self, position):
+    def set_position(self, position):
         if self.cap:
             self.cap.set(cv2.CAP_PROP_POS_FRAMES, position)
             ret, frame = self.cap.read()
@@ -307,16 +274,16 @@ class SingleVideoPlayer(QWidget):
                 pixmap = QPixmap.fromImage(qImg)
                 self.scene.clear()
                 self.scene.addPixmap(pixmap)
-                self.graphicsView.setScene(self.scene)
-                self.graphicsView.fitInView(
+                self.graphics_view.setScene(self.scene)
+                self.graphics_view.fitInView(
                     self.scene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
-                self.updateInfoLabel()
+                self.update_info_label()
             else:
                 self.timer.stop()
 
-    def updateInfoLabel(self):
+    def update_info_label(self):
         currentFrameNum = int(self.cap.get(cv2.CAP_PROP_POS_FRAMES))
-        self.infoLabel.setText(
+        self.info_label.setText(
             f"FPS: {self.fps} | Total Frames: {self.totalFrames} | Current Frame: {currentFrameNum}")
         
     def get_video_file_path(self):
@@ -329,7 +296,7 @@ class SingleVideoPlayer(QWidget):
     def get_video_fps(self):
         return self.fps
     
-    def getOverlapFrame(self):
+    def get_overlap_frame(self):
         try:
             overlap_frame = int(self.overlap_frame_input.text())
             if 0 <= overlap_frame and overlap_frame <= self.totalFrames:
@@ -339,8 +306,8 @@ class SingleVideoPlayer(QWidget):
         except:
             return None
     
-    def getSelectedColor(self):
-        return self.colorComboBox.currentText()
+    def get_selected_color(self):
+        return self.color_combo_box.currentText()
 
 
 if __name__ == '__main__':

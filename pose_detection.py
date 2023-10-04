@@ -47,7 +47,6 @@ def pose_detection(video_path) -> str:
     output_csv_path = f"exported/{filename}.csv"
     
     cap = cv2.VideoCapture(video_path)
-    frame_rate = cap.get(cv2.CAP_PROP_FPS)
 
     if not cap.isOpened():
         return
